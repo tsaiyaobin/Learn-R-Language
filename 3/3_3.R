@@ -14,8 +14,18 @@ mat
 dat <- as.data.frame(mat)                       # 有欄名(v1,v2...) 與 列號(1,2...)
 dat
 
-str(dat) # 5 obs. of  7 variables (5 筆觀測值, 7個變數)
-dat$V1 # 等價於 dat[,1]
+## 取值差異
+### dataframe
+str(dat)      # 5 obs. of  7 variables (5 筆觀測值, 7個變數)
+dat$V1        # 等價於 dat[,1]
+
+### matrix
+mat[, 1]
+colnames(mat) # 預設為 Null
+# 加欄位名
+colnames(mat) <- paste("V", 1:dim(mat)[2], sep = "")
+mat[, "V1"]   # matrix 即使加了欄位名，也無法用 $ 取值
+
 
 
 
