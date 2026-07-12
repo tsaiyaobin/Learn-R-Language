@@ -11,3 +11,7 @@ iris[iris[, 1] > 6, ]
 str(iris)
 
 # 三維陣列
+data(iris3)
+iris3
+str(iris3)
+iris3[1:5, , 3]
