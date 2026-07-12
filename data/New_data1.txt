@@ -1,0 +1,7 @@
+V1	V2	V3	V4	V5	V6	garage
+1	price	floor	area	rooms	age	cent.heat	1
+2	32	91	530	3	6.2	no	0
+3	54.75	128	710	5	7.5	no	1
+4	77.5	351	1400	7	4.2	no	2
+5	57.5	131	690	6	8.8	yes	0
+6	68.2	210	1050	5	3.4	yes	2
