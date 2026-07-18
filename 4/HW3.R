@@ -47,5 +47,3 @@ legend(locator(1), c("812105", "784224"), col = c(2, 4),  pch = c(2, 4), cex = 0
 
 
 
-
-
