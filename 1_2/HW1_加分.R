@@ -28,13 +28,14 @@ gene_top10 <- order(sd_top1_sample, decreasing = TRUE)[1:10]
 #   樣本名稱、sample-wise sd、sd 排名，以及該樣本前 10 高表現基因的 Image Id 與表現值。
 top10_gene_expression <- array(vector("list", 63), dim = c(63, 1))
 top10_gene_id <- array(vector("list", 63), dim = c(63, 1))
+
 for (i in 1:63){
     top10_gene_expression[[i]] <- sort(bb[, i], decreasing = TRUE)[1:10]
     idx <- order(bb[, i], decreasing = TRUE)[1:10]
     top10_gene_id[[i]] <- gene[idx]
 }
 
-table <- data.frame("樣本名稱" = colnames(bb), "sample-wise sd" = sd_samples,
+table <- data.frame("樣本名稱" = colnames(bb), "sample-wise sd" = xssd_samples,
                     "sd 排名" = rank(sd_samples), 
                     "Image Id" = top10_gene_id,
                     "Gene Expression top 10" = top10_gene_expression,
