@@ -1,5 +1,4 @@
-path = "/Users/austin/Desktop/Learn_R/Learn-R-Language/data/"
-aa <- read.delim(paste(path, "SRBCT_train.txt", sep = ""))
+aa <- read.delim("SRBCT_train.txt")
 bb <- as.matrix(aa[,-c(1,2)])
 sample <- colnames(bb)
 gene <- aa[, 1]
