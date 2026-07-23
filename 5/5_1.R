@@ -9,8 +9,12 @@ data1 <- read.delim("MLL_train.txt", row.names=1)
 # 只留下對應 TRUE 的位置，回傳的是列的位置（第幾列），不是數量。
 (1:nrow(data))[row.names(data) == "AFFX-DapX-3_at"]
 
+# 在 data 的所有列名（row names）裡，尋找包含 "AFFX" 這個字串的列，
+# 並回傳符合的索引位置（第幾列）
 grep("AFFX", rownames(data))
+
 #### correlation matrix ####
+# 計算不同方向的相關係數矩陣
 data2 <- data1[,-1]
 cor1 <- cor(data2)
 cor2 <- cor(t(data2))
