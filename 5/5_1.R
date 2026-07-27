@@ -1,3 +1,5 @@
+# Check Read-in Data 
+
 data<-read.delim("MLL_train.txt")
 dim(data)
 data[1:3,]
@@ -18,3 +20,4 @@ grep("AFFX", rownames(data))
 data2 <- data1[,-1]
 cor1 <- cor(data2)
 cor2 <- cor(t(data2))
+
