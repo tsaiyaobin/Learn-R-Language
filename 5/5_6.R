@@ -15,3 +15,6 @@ heatmap(cor(exprs(ALL.1)), Rowv=NA, Colv=NA, scale= "none",
         RowSideColors = as.character(as.numeric(ALL.1 $ mol.bio)), 
         ColSideColors = as.character(as.numeric(ALL.1 $ mol.bio)))
 
+## In the correlation plot, NEG has two subgroups.
+## One is B-cell (BT=B) and the other is T-cell (BT=T)
+ALL$BT
