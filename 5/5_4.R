@@ -23,6 +23,14 @@ x <- (x - min(x)) / (max(x) - min(x))
 plot(x, col = GTclass.labels, pch = GTclass.labels, 
      xlab = "Samples", ylab = "Gene Expression Values")
 
+# 核心概念:比較「差距」和「雜訊」
+# t 統計量(t 值)可以想成一個比值:
+#     t = 兩組平均值的差距 / 數據本身的波動(雜訊)
+# 分子(差距大)→ 兩組平均差很多 → t 值變大
+# 分母(波動小)→ 每組數據很集中、不亂跳 → t 值變大
+# 所以:
+#     |t 值| 很大 → 兩組差異明顯又穩定 → 這個基因「有鑑別力」,能區分兩種病人 
+#     |t 值| 接近 0 → 兩組平均差不多,或數據太亂 → 這個基因「沒鑑別力」
 
 t.test.R <- t.test(x[which(GTclass.labels == 1)],
                    x[which(GTclass.labels == 2)])
