@@ -1,0 +1,122 @@
+library(dplyr)
+library(ggplot2)
+
+# 讀檔起手式
+temp <- read.csv("歷年護理人員資料表.csv")  #請輸入正確的檔案路徑
+# 若讀入的是亂碼，試試以下
+# temp <- read.csv("歷年護理人員資料表.csv",fileEncoding = 'big5')  #如果你是mac
+# 或是
+# temp <- read.csv("歷年護理人員資料表.csv",fileEncoding = 'utf-8') #如果你是windows
+
+## 觀察資料 ##
+str(temp)
+summary(temp)
+head(temp)
+
+# Q1-1:看看2008年各個年齡層的護理師人數#
+temp_age <- temp %>% 
+  filter(年度 == "2008") %>% #挑出年度為2008年
+  group_by(年齡) %>% #根據年齡分群
+  summarise(護理師人數 = sum(人數)) #計算總人數 
+
+thm <- function() theme(text=element_text(size = 15, family = "STHeiti")) # 控制字體與大小
+# STHeiti是只有Mac才有的字體, 用來解決Mac系統中文顯示錯誤的問題
+# Windows系統的使用者請忽略 `+ thm()` 指令
+
+ggplot(temp_age,aes(x = 年齡, y = 護理師人數))+geom_line()+thm()
+
+# Q1-2: 2012年各縣市的護理師人數
+
+temp %>%  
+  filter(年度 == "2012") %>% 
+  group_by(縣市) %>% 
+  summarise(total = sum(人數))%>%
+  ggplot(aes(x = 縣市, y = total,fill = 縣市))+
+  geom_bar(stat = 'identity')+
+  thm()+
+  labs(titles = "2012年各縣市護理師數", x = "縣市",y = "護理師人數")+coord_flip()
+
+# Q2-1: 歷年醫護人員的人數 #
+temp_year <- temp  %>% 
+  group_by(年度) %>% #根據年度分群
+  summarise(護理師人數 = sum(人數)) #計算總人數
+
+ggplot(temp_year,aes(x = 年度 , y = 護理師人數)) +
+  geom_line(size = 2) + geom_point(size = 5) + # 控制點與線的大小粗細
+  thm() + labs(titles = "各年度護理人員數", x = "年度", y = "護理師人數") # lab用來幫圖形的標題、x軸與y軸做命名
+
+
+# Q2-2: 六都歷年的護理人數 #
+temp_6city=temp%>%
+  filter(縣市 %in% c('台北市','新北市','台中市','台南市','高雄市','桃園市'))%>%
+  group_by(縣市,年度) %>% #根據年度分群
+  summarise(護理師人數 = sum(人數)) #計算總人數
+
+ggplot(temp_6city, aes(x = 年度, y = 護理師人數 ,  color = 縣市)) + 
+  geom_line() + 
+  geom_point() + thm() +
+  labs(titles="歷年六都護理師人數差異",x="年度",y="護理師人數") +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1)) # 控制x軸字體傾斜程度
+
+ggplot(temp_6city, aes(x = 年度, y = 護理師人數 ,  color = 縣市)) + 
+  geom_line() + 
+  geom_point() + thm() +
+  labs(x="年度",y="護理師人數") +
+  facet_wrap(~縣市,nrow = 3)+
+  theme(axis.text.x = element_text(angle = 30, hjust = 1))
+
+
+# Q3-1: 不同縣市的護理人數男女比例 
+temp_gender=temp%>%
+  group_by(縣市,性別)%>%
+  summarise(護理師人數 = sum(人數))
+
+ggplot(temp_gender,aes(x=縣市,y=護理師人數, fill=性別))+
+  geom_bar(stat='identity',position='fill')+thm()+coord_flip()
+  
+ggplot(temp_gender,aes(x=縣市,y=護理師人數, fill=性別))+
+  geom_col(position='fill')+thm()+coord_flip()
+
+# Q3-2: 不同醫療層級中護理人數男女比例
+temp%>%
+  group_by(醫療層級,性別)%>%
+  summarise(護理師人數 = sum(人數))%>%
+  ggplot(aes(x=醫療層級,y=護理師人數,fill=性別))+geom_col(position = 'fill')+thm()
+
+# Q3-3: 不同性別中醫療層級比例
+
+ggplot(temp_gender.2,aes(x=性別,y=護理師人數,fill=醫療層級))+geom_col(position = 'fill')+thm()
+
+ggplot(temp_gender.2,aes(x=性別,y=護理師人數,fill=醫療層級))+geom_col(position = 'dodge')+thm()
+
+# Q4: 以2008年來說，不同的醫療層級，護理人員的分佈狀況如何呢？
+
+temp %>% 
+  filter(年度 == "2008") %>% #選擇年度2008
+  group_by(醫療層級) %>% #對醫療層級分群
+  summarise(護理師人數 = sum(人數)) %>%
+  ggplot(aes(x = 醫療層級, y = 護理師人數)) +
+  geom_col() + thm()# stat='identity'以表格的值做為bar的高度
+
+# Q5-1: 歷年中，不同的醫療層級中護理人員的個數
+
+temp_degree=temp %>% 
+  group_by(年度,醫療層級) %>% #對年度與醫療層級分群
+  summarise(護理師人數 = sum(人數))
+
+  ggplot(temp_degree,aes(x=年度,y=護理師人數,color=醫療層級))+geom_line()+thm()
+
+# Q5-2: 歷年中，不同的醫療層級中護理人員的比例
+
+  ggplot(temp_degree,aes(x=年度,y=護理師人數,fill=醫療層級))+geom_col(position='fill')+thm()
+
+# Q5-3: 在2008年中，各縣市中不同醫療層級所佔醫護人員之比例
+  temp%>%
+    filter(年度==2008)%>%
+    ggplot(aes(x=縣市,y=人數,fill=醫療層級))+geom_col(position='fill')+thm() +coord_flip()
+  
+# Q5-4: 各縣市中，在不同年度的人數分佈為何? (hint: boxplot)
+  temp%>%
+    group_by(年度,縣市)%>%
+    summarise(護理師人數=sum(人數))%>%
+    ggplot(aes(x=縣市,y=護理師人數))+geom_boxplot()+thm()+coord_flip()

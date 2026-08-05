@@ -183,7 +183,7 @@ min_max_norm <- function(x){
     (x - min(x)) / (max(x) - min(x))
 }
 
-data2_norm <- t(apply(data1, 1, min_max_norm))
+data2_norm <- t(apply(data2, 1, min_max_norm))
 
 # 取得所有欄位名稱
 cols2 <- colnames(data2)

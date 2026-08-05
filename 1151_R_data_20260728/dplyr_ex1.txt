@@ -1,0 +1,171 @@
+#install.packages("nycflights13")
+library(dplyr)
+library(ggplot2)
+#Classic	R	code
+mean(	rnorm(	100,	mean	=	4,	sd	=	4),	trim	=	.1	)
+
+# Pipeline	R	code	with	%>%
+100	%>%
+  rnorm(	mean	=	4,	sd	=	4)	%>%
+  mean(	trim	=	.1	)
+
+## dplyr ##
+library(nycflights13)
+data(flights)
+
+str(flights)
+head(flights)
+summary(flights)
+
+#############################
+##### filter：篩選 rows #####
+#############################
+
+## 篩選 flights 中 month=1 且 day =1
+filter(flights, month==1 , day==1)
+
+flights %>% filter(month==1,day==1)
+
+## 篩選 flights 中 arr_delay < dep_delay
+flights %>% 
+  filter(arr_delay < dep_delay)
+
+## 篩選 flights 中 dep_delay < 10
+flights %>%
+  filter(dep_delay<10)
+
+## 篩選 flights 中 hour < 12 and arr_delay <=10
+flights %>% 
+  filter(hour<12,arr_delay<=10)
+
+########################
+##### arrange:排序 #####
+########################
+
+## 篩選 flights 中 hour < 8 然後 依照 year, month, day排序
+flights	%>%
+  filter(	hour	<	8	)	%>% 
+  arrange(	year,	month,	day	)
+
+## 針對 dep_delay 由大到小排序 
+flights	%>%
+  arrange(	desc(dep_delay)	)
+
+################################
+##### select：篩選 columns #####
+################################
+
+## 篩選名字為 year, month, day 的 columns
+flights%>%
+  select(year,month,day)
+
+## 篩選 year到day 的 columns
+flights%>%
+  select(year:day)
+
+## 不要 year到day 的 columns
+flights%>%
+  select(-(year:day))
+
+################################
+##### mutate：新增 columns #####
+################################
+
+## d1 = flights 新增一個col叫“gain" 為 arr_delay-dep_delay, 再加一個"speed" 為 distance/air_time*60
+
+d1=flights%>%
+  mutate(
+    gain=arr_delay-dep_delay,
+    speed=distance/air_time*60
+  )
+
+## d2= 
+#  1. flights 新增一個col叫“gain" 為 arr_delay-dep_delay, 再加一個"speed" 為 distance/air_time*60
+#  2. gain>0
+#  3. 針對 speed 由大到小排序
+d2=flights%>%
+  mutate(
+    gain=arr_delay-dep_delay,
+    speed=distance/air_time*60
+  )%>%
+  filter(gain>0)%>%
+  arrange(desc(speed))
+
+################################
+##### summarise：匯總數據 ######
+################################
+
+flights%>%
+  summarise(delay=mean(dep_delay,na.rm=T))
+
+flights%>%
+  filter(dep_delay>0)%>%
+  summarise(arr_delay=mean(arr_delay,na.rm=T))
+
+### aa中 針對 x 分組，然後計算y的平均 ##
+aa=data.frame(x=c('a','a','b','b','c','c'),y=c(2,4,0,5,5,10))
+
+aa%>%
+  group_by(x)%>%
+  summarise(mean.y=mean(y))
+
+## flights 中 計算出 每個tailnum的飛行次數，平均飛行距離，平均延遲抵達時間，＃#
+
+flights %>% 
+  group_by(tailnum)%>%
+  summarise(
+    count=n(),
+    dist=mean(distance,na.rm=T),
+    delay=mean(arr_delay,na.rm=T)
+  )%>%
+  filter(is.finite(delay)) %>%
+  arrange( desc(count))
+  
+
+## flights 中 計算出 每個dest中 總共的飛機(tailnum)個數，總共的飛行次數，再根據飛行次數排序
+
+flights %>%
+  group_by(dest)%>%
+  summarise(
+    plane=n_distinct(tailnum),
+    flights=n()
+  )%>%
+  arrange(desc(flights))
+
+
+#### join 系列 連接不同table ####
+
+bb=data.frame(x=c('a','b'),z=c('dd1','dd2'))
+
+
+inner_join(aa,bb,by=c('x'))
+left_join(aa,bb,by=c('x'))
+right_join(aa,bb,by=c('x'))
+anti_join(aa,bb,by=c('x'))
+
+
+## 1. 找出 每輛飛機的 飛行次數，平均飛行距離，平均delay時間  ##
+## 2. 並依此畫出 飛行距離 和 delay 時間, 再找出好的呈現方式
+
+delay_data=flights%>%
+  group_by(tailnum)%>%
+  summarise(count=n(),
+            avg_dist=mean(distance,na.rm=T),
+            avg_delay=mean(arr_delay,na.rm=T))%>%
+  filter(count>20,avg_dist<2000)
+
+
+ggplot(data=delay_data,aes(avg_dist,avg_delay))+
+  geom_point()
+
+ggplot(data=delay_data,aes(avg_dist,avg_delay))+
+  geom_point(aes(size=count),alpha=.5)
+
+ggplot(data=delay_data,aes(avg_dist,avg_delay))+
+  geom_point(aes(size=count),alpha=.3)+
+  geom_smooth()
+
+ggplot(data=delay_data,aes(avg_dist,avg_delay))+
+  geom_point(aes(size=count),alpha=.3)+
+  geom_smooth()+
+  scale_size_area()

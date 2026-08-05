@@ -1,0 +1,238 @@
+library(dplyr)
+library(ggplot2)
+library(data.table)
+
+## data ##
+library(ggplot2movies)
+data(movies)
+
+#Exercise 1 基本操作複習
+#Exercise 1a
+#新增一欄位ratingGen為 rate 減去期平均值
+movies %>% 
+  mutate(ratingCen = rating - mean(rating))
+
+#Exercise 1b
+#找出2000年後的電影
+movies %>% 
+  filter(year >= 2000)
+
+#Exercise 1c
+#篩選出前六欄，三種寫法
+movies %>% 
+  select(title, year, budget, length, rating, votes) 
+movies %>% 
+  select(1:6)
+movies %>% 
+  select(-num_range('r',1:10), -mpaa, -starts_with('A'), -Comedy, -starts_with('D'), -Romance, -Short)
+
+#Exercise 2
+#計算出每年電影預算之平均值，並且畫出。
+AvgBudget=movies %>% 
+  group_by(year) %>% 
+  summarise(AvgBudget=mean(budget, na.rm=T)) 
+
+ggplot(data=AvgBudget,aes(x=year,y=AvgBudget))+geom_line()
+ggplot(data=AvgBudget,aes(x=year,y=AvgBudget))+geom_bar(stat='identity')
+
+#Exercise 3
+# 找出1990年後 不同mpaa分級之戲劇片以及非劇情片的平均評價，並用ggplot 畫出
+# *Filter to post 1990 movies
+# *select the same variables as before but also the mpaa, and Drama variables
+# *group by mpaa Drama
+# *get the average rating
+drama=movies %>%
+  filter(year>=1990) %>% 
+  select(title, year, budget, length, rating, votes, mpaa, Drama) %>% 
+  group_by(mpaa, Drama) %>% 
+  summarise(AvgRating = mean(rating))
+
+ggplot(data=drama,aes(x=mpaa,y=AvgRating,fill=as.factor(Drama)))+geom_bar(stat='identity',position = 'dodge')
+
+
+###############
+#### Ubike ####
+###############
+
+# 快速讀檔
+data_ubike <- fread('ubike.csv',
+                    data.table = FALSE,stringsAsFactors = F,encoding = "UTF-8")
+# 基本讀檔用法
+data_ubike <- read.csv("ubike.csv",
+                       header = T,
+                       sep = ",",
+                       stringsAsFactors = F,
+                       fileEncoding = "UTF-8")
+
+# 看看資料結構
+str(data_ubike)
+
+
+### [EXAM 1].畢業後想在信義區附近租房子，大安區上班，希望以後上下班可以靠 ubike 通勤，故希望每天早上7:00左右與下午19:00左右都可以輕鬆的租借到ubike
+#找出信義區早上7:00與大安區下午19:00腳踏車最多的場站
+#找出大安區早上8:00與信義區下午20:00空位數最多的場站
+
+### [ANS 1].
+# - 首先，我們會利用 select 挑選出需要的欄位
+# 挑出時間、場站區域、場站名稱、平均車輛數
+data_ubike %>% 
+  select(hour, sarea, sna, avg.sbi) %>% 
+  head()
+
+#- 再來，我們要篩選出信義區早上7:00與大安區下午19:00的資料
+# 篩選出信義區早上7:00與大安區下午19:00的資料
+data_ubike %>% 
+  select(hour, sarea, sna, avg.sbi) %>% 
+  filter(sarea == "信義區" & hour == 7)
+
+data_ubike %>% 
+  select(hour, sarea, sna, avg.sbi) %>% 
+  filter(sarea == "大安區" & hour == 19)
+
+#- 把剛剛的資料擷取前面六筆看看吧！
+# 擷取信義區早上7:00的資料前六筆
+data_ubike %>% 
+  select(hour, sarea, sna, avg.sbi) %>% 
+  filter(sarea == "信義區" & hour == 7) %>% 
+  slice(1:6)
+
+#- 將平均車輛數無條件捨去至個位數，直接更新原始欄位
+data_ubike %>% 
+  select(hour, sarea, sna, avg.sbi) %>% 
+  filter(sarea == "信義區" & hour == 7) %>% 
+  mutate(avg.sbi = floor(avg.sbi))
+
+data_ubike %>% 
+  select(hour, sarea, sna, avg.sbi) %>% 
+  filter(sarea == "大安區" & hour == 19) %>% 
+  mutate(avg.sbi = floor(avg.sbi))
+
+# **1. 計算信義區早上7:00各站點的平均車輛數**
+data_ubike %>% 
+  select(hour, sarea, sna, avg.sbi) %>% 
+  filter(sarea == "信義區" & hour == 7) %>% 
+  mutate(avg.sbi = floor(avg.sbi)) %>% 
+  group_by(hour, sarea, sna) %>% 
+  summarise(avg = mean(avg.sbi, na.rm = T) %>% round())
+
+# **2.計算大安區晚上19:00各站點的平均車輛數**
+data_ubike %>% 
+  select(hour, sarea, sna, avg.sbi) %>% 
+  filter(sarea == "大安區" & hour == 19) %>% 
+  mutate(avg.sbi = floor(avg.sbi)) %>% 
+  group_by(hour, sarea, sna) %>% 
+  summarise(avg = mean(avg.sbi, na.rm = T) %>% round())
+
+# **將平均車輛數由大到小排序，看看哪個站點的車子最多吧！**
+# 信義區
+xi=data_ubike %>% 
+  select(hour, sarea, sna, avg.sbi) %>% 
+  filter(sarea == "信義區" & hour == 7) %>% 
+  mutate(avg.sbi = floor(avg.sbi)) %>% 
+  group_by(hour, sarea, sna) %>% 
+  summarise(avg = mean(avg.sbi, na.rm = T) %>% round()) %>% 
+  arrange(avg %>% desc())
+
+# 大安區
+dn=data_ubike %>% 
+  select(hour, sarea, sna, avg.sbi) %>% 
+  filter(sarea == "大安區" & hour == 19) %>% 
+  mutate(avg.sbi = floor(avg.sbi)) %>% 
+  group_by(hour, sarea, sna) %>% 
+  summarise(avg = mean(avg.sbi, na.rm = T) %>% round()) %>% 
+  arrange(avg %>% desc())
+
+
+## ggplot ##
+xidn=rbind(xi,dn)
+
+thm=function() theme(text=element_text(size=8,family='STHeiti'))
+ggplot(xidn,aes(x=sna,y=avg))+geom_bar(stat='identity')+facet_grid(sarea~.) +thm()+coord_flip()
+
+### [EXAM 2].許多朋友會在晚上的時間後租借 ubike 騎腳踏車運動，但是騎車最怕碰到下雨，所以 想要了解晚上溼度的高低是否會與民眾租借ubike的意願有關聯性？
+
+#- 例如：溼度高可能意味者降雨機率也高，會不會使得民眾使用ubike的意願降低？
+#–> 觀察濕度與平均空位數的相關係數
+# 挑選欄位：時間、平均空位數、濕度
+# 篩選時間介於18:00-24:00間的資料
+# 將平均空位數欄位無條件捨去到個位數後，將新資料表assign至新變數中
+
+data_ubike %>% 
+  select(hour, avg.bemp, humidity) %>% 
+  filter(hour <= 24 & hour >= 18) %>% 
+  mutate(avg.bemp = floor(avg.bemp)) -> data_ubike_part2
+
+# 觀察平均空位數與濕度間的相關係數
+cor(data_ubike_part2$avg.bemp, data_ubike_part2$humidity)
+# ggplot 畫出
+ggplot(data_ubike_part2,aes(avg.bemp,humidity))+geom_point(alpha=.3)
+
+hist(data_ubike$tot)
+
+#### 應該用空位數百分比做為使用率百分比 ####
+data_ubike_part3=data_ubike %>% 
+  filter(hour <= 24 & hour >= 18) %>% 
+  mutate(usage = avg.bemp/tot*100)%>%
+  select(hour, usage, humidity)
+
+# 觀察平均空位數百分比與濕度間的相關係數
+R=cor(data_ubike_part3$usage, data_ubike_part3$humidity)
+# ggplot 畫出
+ggplot(data_ubike_part3,aes(usage,humidity))+geom_point(alpha=.1)+labs(title=paste('R = ',R),x='使用率') +thm()
+
+
+
+
+# 產生一個欄位其代表使用率
+data_ubike=data_ubike%>%
+  mutate(usage=avg.bemp/tot*100)
+
+
+### [EXAM 3]
+#不同時間之使用率如何？
+
+data_ubike%>%
+  group_by(hour)%>%
+  summarise(mean_usage=mean(usage))%>%
+  ggplot(aes(x=hour,y=mean_usage)) + geom_line()
+
+#每一區都一樣的趨勢嗎？
+data_ubike%>%
+  group_by(sarea,hour)%>%
+  summarise(mean_usage=mean(usage))%>%
+  ggplot(aes(x=hour,y=mean_usage)) + geom_line(aes(color=sarea))+thm()
+
+
+###[EXAM 4]
+# 每一區擁有之ubike車位總個數為何？
+sna_ubike=data_ubike%>%
+  filter(date=='2015-01-16',hour==9)
+select(sarea,sna,tot)
+
+
+sna_ubike%>%
+  group_by(sarea)%>%
+  summarise(sum_tot=sum(tot))%>%
+  ggplot(aes(x=sarea,y=sum_tot))+geom_col()+coord_flip()+thm()
+
+# 不同站之ubike車位個數之分佈如何？
+sna_ubike%>%
+  ggplot(aes(tot))+geom_histogram()
+
+###[EXAM 5]
+# 是否所有些站的ubike使用率不佳？
+
+data_ubike_usageBYsna=data_ubike%>%
+  filter(rainfall==0)%>%
+  group_by(sarea,sna)%>%
+  summarise(mean_usage=mean(usage))
+
+# hist(mean_usage)
+hist(data_ubike_usageBYsna$mean_usage,50)
+
+data_ubike_usageBYsna%>%
+  filter(mean_usage<50)
+
+data_ubike_usageBYsna%>%
+  filter(mean_usage<50)%>%
+  ggplot(aes(x=sna,y=mean_usage,fill=sarea))+geom_col()+thm()+coord_flip()
