@@ -176,33 +176,33 @@ print(table(Predicted = all_pred, Actual = all_true))
 # 本題只用 SRBCT_train.txt,重點在「換一種檢定方法選基因」,不需要用到 test set(test set 是
 #                                                     加分題 C 的事)。
 data_SRBCT <- read.delim("SRBCT_train.txt")
-data1 <- as.matrix(data_SRBCT[ , -c(1:2)])
+data2 <- as.matrix(data_SRBCT[ , -c(1:2)])
 Image_id <- data_SRBCT[,1]
 
 min_max_norm <- function(x){
     (x - min(x)) / (max(x) - min(x))
 }
 
-data1_norm <- t(apply(data1, 1, min_max_norm))
+data2_norm <- t(apply(data1, 1, min_max_norm))
 
 # 取得所有欄位名稱
-cols <- colnames(data1)
-labels <- sub("\\..*", "", cols)
+cols2 <- colnames(data2)
+labels2 <- sub("\\..*", "", cols2)
 
-EWS_p <- apply(data1_norm, 1, function(x)
-                    wilcox.test(x[which(labels == "EWS")], x[-which(labels == "EWS")], alternative = "greater")$p.value)
+EWS_p <- apply(data2_norm, 1, function(x)
+                    wilcox.test(x[which(labels2 == "EWS")], x[-which(labels2 == "EWS")], alternative = "greater")$p.value)
 EWS_p_top10 <- order(EWS_p)[1:10]
 
-BL_p <- apply(data1_norm, 1, function(x)
-    wilcox.test(x[which(labels == "BL")], x[-which(labels == "BL")], alternative = "greater")$p.value)
+BL_p <- apply(data2_norm, 1, function(x)
+    wilcox.test(x[which(labels2 == "BL")], x[-which(labels2 == "BL")], alternative = "greater")$p.value)
 BL_p_top10 <- order(BL_p)[1:10]
 
-NB_p <- apply(data1_norm, 1, function(x)
-    wilcox.test(x[which(labels == "NB")], x[-which(labels == "NB")], alternative = "greater")$p.value)
+NB_p <- apply(data2_norm, 1, function(x)
+    wilcox.test(x[which(labels2 == "NB")], x[-which(labels2 == "NB")], alternative = "greater")$p.value)
 NB_p_top10 <- order(NB_p)[1:10]
 
-RMS_p <- apply(data1_norm, 1, function(x)
-    wilcox.test(x[which(labels == "RMS")], x[-which(labels == "RMS")], alternative = "greater")$p.value)
+RMS_p <- apply(data2_norm, 1, function(x)
+    wilcox.test(x[which(labels2 == "RMS")], x[-which(labels2 == "RMS")], alternative = "greater")$p.value)
 RMS_p_top10 <- order(RMS_p)[1:10]
 
 EWS_top10_id <- Image_id[EWS_p_top10]
@@ -213,8 +213,8 @@ RMS_top10_id <- Image_id[RMS_p_top10]
 # ⭐ 加分題 C
 # 沿用主題目在 training set 上選出的 30 個基因與訓練好的 SVM 模型,套用到 MLL_test.txt 上做預測,
 # 並做出 test set 的 confusion matrix(同樣是三類別的 3×3 表)。
-# MLL_test.txt 共 15 個樣本(ALL 4 / MLL 3 / AML 8),基因列與 MLL_train.txt 完全對齊(同樣 12582
-#                                                                      列、同樣順序),所以選出的基因可以直接用相同的列索引取出。
+# MLL_test.txt 共 15 個樣本(ALL 4 / MLL 3 / AML 8), 基因列與 MLL_train.txt 完全對齊
+# (同樣 12582 列、同樣順序), 所以選出的基因可以直接用相同的列索引取出。
 # 重點:基因的挑選與模型的訓練都只能用 training set;test set 只在最後拿來評估,不可以參與選基因
 # 或訓練。
 # 提示:test set 也要做同樣的前處理(移除 AFFX、逐列 normalize),否則和訓練時的尺度對不上。
@@ -223,13 +223,42 @@ RMS_top10_id <- Image_id[RMS_p_top10]
 # 補充:MLL_test.txt 的欄名沒有 train 那邊的雙底線問題(MLL_18/MLL_19/MLL_20 都是單底線),
 # 但樣本編號是接續 train 繼續編的(如 ALL_21、AML_24),不是從 1 重新開始。
 
+# 主題目篩選 30 genes＆svm model (加分題Ａ以寫過，再拿下來用一次)
+selected_genes <- c(rownames(ALL_top_10_genes),
+                    rownames(MLL_top_10_genes),
+                    rownames(AML_top_10_genes))
+#-------------------------------------------------------------------------------
+# 讀檔
+MLL_test <- read.delim("MLL_test.txt")
+test_data <- MLL_test[-c(1:49), ]
 
+# 正規化 (function在加分題Ａ，所以直接呼叫)
+test_data_norm <- t(apply(test_data[, 3:ncol(test_data)], 1, min_max_norm))
 
+# 從 test_data 提出 train_data 選出的 30 個基因列
+test_data_30 <- test_data_norm[selected_genes, ]
 
+# 清洗欄位名稱
+test_data_col_name <- colnames(test_data_30)
+test_data_labels <- sub("_.*", "", test_data_col_name)
+test_data_labels        # 觀查
+table(test_data_labels) # 觀查
 
+# 將 test_data 喂進去 svm model 跑結果
 
+# data_norm、selected_genes、labels 在加分題Ａ已執行
+train_data <- data_norm[selected_genes, ]
+x_train <- t(train_data)
+y_train <- factor(labels)
+svm_model <- svm(x_train, y_train)
 
+x_test2 <- t(test_data_30)
+y_test2 <- factor(test_data_labels)
 
+pred2 <- predict(svm_model, x_test2) 
+
+confusion_matrix <- table(Predicted = pred2, Actual = y_test2)
+confusion_matrix
 
 
 
