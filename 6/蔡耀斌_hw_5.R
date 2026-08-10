@@ -1,4 +1,4 @@
-# 1. Remove genes with name starting AFFX...(控制探針,共 49 個)
+# HW4 的 30 個 DE genes
 MLL_train <- read.delim("MLL_train.txt")
 data <- MLL_train[-c(1:49), ]
 
@@ -23,9 +23,6 @@ col_name <- colnames(data_norm)
 labels <- sub("_.*", "", col_name)
 table(labels)
 
-# 3. Find top 10 differentially expressed genes using t-test, 每組一次(該組 vs 其他),
-#    條件:mean(該組) > mean(其他)
-#    • 三組各 10 個 → 合併成 30 selected genes
 # ALL
 ALL_data <- data_norm[, which(labels == "ALL")]          # 只有 ALL 的欄位資料
 ALL_others_data <- data_norm[, -which(labels == "ALL")]  # 除了 ALL 的欄位資料
@@ -88,19 +85,76 @@ selected_genes <- c(rownames(ALL_top_10_genes),
                     rownames(MLL_top_10_genes),
                     rownames(AML_top_10_genes))
 
-# 檢查是否有重複挑選的基因
-selected_genes <- unique(selected_genes)   
-# 4. Use SVM to classify (條件:training data 同時當 testing data)
-BiocManager::install("e1071")
-library("e1071")
+my_data <- data_norm[selected_genes, ]
 
-train_data <- data_norm[selected_genes, ]
-x_train <- t(train_data)
-y_train <- factor(labels)
-svm_model <- svm(x_train, y_train)
-pred <- predict(svm_model, x_train) 
 
-# 5. Make confusion matrix
-confusion_matrix <- table(Predicted = pred, Actual = y_train)
-confusion_matrix
+# 1. 畫 2D MDS plot 與 2D PCA plot
+# 三種顏色分別代表三類樣本(ALL / MLL / AML),並附上 legend
+library(gplots)
+color <- c("ALL" = "#EECB27", "MLL" = "#E13239", "AML" = "#1F1762")
+col_list <- color[labels]
+
+# PCA
+my_data_prcomp <- prcomp(t(my_data), scale = T, retx = T)
+pv <- summary(my_data_prcomp)$importance[2, 1:2] * 100 
+
+xlab_txt <- paste0("PC1 (", round(pv[1], 1), "%)")
+ylab_txt <- paste0("PC2 (", round(pv[2], 1), "%)")
+
+plot(my_data_prcomp$x[, 1], my_data_prcomp$x[, 2], col = col_list, pch = 17,
+     xlab = xlab_txt, ylab = ylab_txt)
+
+legend("topright", legend = names(color), col = color[names(color)], pch = 17, cex = 0.8)
+
+# MDS
+my_data_mds <- cmdscale(dist(t(my_data)), 2)
+
+plot(my_data_mds[, 1], my_data_mds[, 2], col = col_list, pch = 16,
+     xlab = "MDS1", ylab = "MDS2")
+
+legend("topright", legend = names(color), col = color[names(color)], pch = 16, cex = 0.8)
+
+
+# 2. 用同樣的 30 個 DE genes,畫一張 heatmap + dendrogram
+#   • 條件:Average linkage + Euclidean distance
+
+my_dist <- function(x) {
+    dist(x, method = "euclidean")
+}
+my_hclust <- function(d) {
+    hclust(d, method = "average")
+}
+
+# heatmap.2(...., distfun = my.dist, hclustfun = my.hclust, ....)
+
+heatmap.2(my_data,                       # ← 改成 my_data(底線)
+          Rowv = TRUE, Colv = TRUE,
+          dendrogram = "both",
+          distfun  = my_dist,
+          hclustfun = my_hclust,
+          scale = "row",
+          trace = "none",
+          ColSideColors = col_list,      # 樣本上方加一條 ALL/MLL/AML 顏色條
+          margins = c(6, 8),             # (欄邊界, 列邊界),避免標籤被切
+          cexRow = 0.6,                  # 30 個基因名縮小才放得下
+          cexCol = 0.7,
+          xlab = "Samples", ylab = "Genes")
+
+legend("topright", legend = names(color), fill = color,
+       border = NA, bty = "n", cex = 0.8)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
