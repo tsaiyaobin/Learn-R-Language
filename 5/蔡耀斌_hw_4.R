@@ -7,6 +7,22 @@ min_max_norm <- function(x){
     (x - min(x)) / (max(x) - min(x))
 }
 
+
+# 2. Normalize data by each row(0~1)
+data_norm <- t(apply(data[, 3:ncol(data)], 1, min_max_norm))
+
+## 取得欄位名稱
+col_name <- colnames(data_norm)
+col_name # 觀察
+
+## 清理欄位名
+labels <- sub("_.*", "", col_name)
+table(labels) # 觀察
+
+# 3. Find top 10 differentially expressed genes using t-test, 每組一次(該組 vs 其他),
+#    條件:mean(該組) > mean(其他)
+#    • 三組各 10 個 → 合併成 30 selected genes
+
 # 對每一 row 計算 t-test
 count_t <- function(group_a, group_b){
     t_value <- numeric(nrow(group_a))
@@ -16,16 +32,6 @@ count_t <- function(group_a, group_b){
     return(t_value) 
 }
 
-# 2. Normalize data by each row(0~1)
-data_norm <- t(apply(data[, 3:ncol(data)], 1, min_max_norm))
-
-col_name <- colnames(data_norm)
-labels <- sub("_.*", "", col_name)
-table(labels)
-
-# 3. Find top 10 differentially expressed genes using t-test, 每組一次(該組 vs 其他),
-#    條件:mean(該組) > mean(其他)
-#    • 三組各 10 個 → 合併成 30 selected genes
 # ALL
 ALL_data <- data_norm[, which(labels == "ALL")]          # 只有 ALL 的欄位資料
 ALL_others_data <- data_norm[, -which(labels == "ALL")]  # 除了 ALL 的欄位資料
@@ -90,11 +96,14 @@ selected_genes <- c(rownames(ALL_top_10_genes),
 
 # 檢查是否有重複挑選的基因
 selected_genes <- unique(selected_genes)   
+selected_genes
+length(selected_genes)
 
 # 4. Use SVM to classify (條件:training data 同時當 testing data)
 BiocManager::install("e1071")
 library("e1071")
 
+# 訓練模型
 train_data <- data_norm[selected_genes, ]
 x_train <- t(train_data)
 y_train <- factor(labels)
