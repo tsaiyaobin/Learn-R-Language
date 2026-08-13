@@ -89,15 +89,21 @@ my_data <- data_norm[selected_genes, ]
 
 
 # 1. 畫 2D MDS plot 與 2D PCA plot
-# 三種顏色分別代表三類樣本(ALL / MLL / AML),並附上 legend
+# 三種顏色分別代表三類樣本(ALL / MLL / AML), 並附上 legend
+
+# 安裝套件
 library(gplots)
+
+# 設定顏色
 color <- c("ALL" = "#EECB27", "MLL" = "#E13239", "AML" = "#1F1762")
 col_list <- color[labels]
+col_list # 觀察
 
 # PCA
-my_data_prcomp <- prcomp(t(my_data), scale = T, retx = T)
-pv <- summary(my_data_prcomp)$importance[2, 1:2] * 100 
+my_data_prcomp <- prcomp(t(my_data))
 
+# 畫出 PC1、PC2 個別主導幾 %
+pv <- summary(my_data_prcomp)$importance[2, 1:2] * 100 
 xlab_txt <- paste0("PC1 (", round(pv[1], 1), "%)")
 ylab_txt <- paste0("PC2 (", round(pv[2], 1), "%)")
 
@@ -107,12 +113,19 @@ plot(my_data_prcomp$x[, 1], my_data_prcomp$x[, 2], col = col_list, pch = 17,
 legend("topright", legend = names(color), col = color[names(color)], pch = 17, cex = 0.8)
 
 # MDS
-my_data_mds <- cmdscale(dist(t(my_data)), 2)
+my_data_mds <- cmdscale(dist(t(my_data)), k = 2, eig = TRUE)
 
-plot(my_data_mds[, 1], my_data_mds[, 2], col = col_list, pch = 16,
-     xlab = "MDS1", ylab = "MDS2")
+# 特徵值 → 每個維度解釋的比例
+eig <- my_data_mds$eig
+pv_mds <- eig[1:2] / sum(eig[eig > 0]) * 100   # 只用正特徵值當分母
 
-legend("topright", legend = names(color), col = color[names(color)], pch = 16, cex = 0.8)
+xlab_mds <- paste0("MDS1 (", round(pv_mds[1], 1), "%)")
+ylab_mds <- paste0("MDS2 (", round(pv_mds[2], 1), "%)")
+
+plot(my_data_mds$points[, 1], my_data_mds$points[, 2],
+     col = col_list, pch = 16, xlab = xlab_mds, ylab = ylab_mds)
+
+legend("topright", legend = names(color), col = color, pch = 16, cex = 0.8)
 
 
 # 2. 用同樣的 30 個 DE genes,畫一張 heatmap + dendrogram
@@ -121,14 +134,14 @@ legend("topright", legend = names(color), col = color[names(color)], pch = 16, c
 my_dist <- function(x) {
     dist(x, method = "euclidean")
 }
+
 my_hclust <- function(d) {
     hclust(d, method = "average")
 }
 
-# heatmap.2(...., distfun = my.dist, hclustfun = my.hclust, ....)
 
 heatmap.2(my_data,                       # ← 改成 my_data(底線)
-          Rowv = TRUE, Colv = TRUE,
+          Rowv = F, Colv = TRUE,
           dendrogram = "both",
           distfun  = my_dist,
           hclustfun = my_hclust,
