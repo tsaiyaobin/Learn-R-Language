@@ -98,7 +98,9 @@ library("e1071")
 # 3. 整體(overall)的 confusion matrix
 # 📌 這裡的 confusion matrix 同樣是三類別(3-class)的 3×3 表(ALL / MLL / AML)
 
+## fold 存的是主題目篩選出的30個基因
 fold <- data_norm[selected_genes, ]
+
 # 依樣本的類別標籤 (ALL / MLL / AML) 分層把樣本切成 3 folds, 讓每個 fold 都包含三個類別的樣本,
 # 且盡可能維持原本的類別比例。
 # ALL 7/7/6、MLL 6/6/5、AML 7/7/6
@@ -134,9 +136,10 @@ all_pred <- character(0)
 all_true <- character(0)
 
 for (i in 1:3){
+    # 先選一個 fold 當 test set
     x_test  <- folds[[i]]
     y_test  <- folds_labels[[i]]
-    
+    # 用剩下兩個 fold 當 training set
     x_train <- rbind(folds[-i][[1]], folds[-i][[2]])
     y_train <- c(folds_labels[-i][[1]], folds_labels[-i][[2]])
     y_train <- factor(y_train)
@@ -175,6 +178,8 @@ print(table(Predicted = all_pred, Actual = all_true))
 # 
 # 本題只用 SRBCT_train.txt,重點在「換一種檢定方法選基因」,不需要用到 test set(test set 是
 #                                                     加分題 C 的事)。
+
+# 讀檔
 data_SRBCT <- read.delim("SRBCT_train.txt")
 data2 <- as.matrix(data_SRBCT[ , -c(1:2)])
 Image_id <- data_SRBCT[,1]
@@ -188,7 +193,10 @@ data2_norm <- t(apply(data2, 1, min_max_norm))
 # 取得所有欄位名稱
 cols2 <- colnames(data2)
 labels2 <- sub("\\..*", "", cols2)
+table(labels)
+labels2
 
+# 套運提示的公式，每類各取 top 10
 EWS_p <- apply(data2_norm, 1, function(x)
                     wilcox.test(x[which(labels2 == "EWS")], x[-which(labels2 == "EWS")], alternative = "greater")$p.value)
 EWS_p_top10 <- order(EWS_p)[1:10]
@@ -210,6 +218,11 @@ BL_top10_id  <- Image_id[BL_p_top10]
 NB_top10_id  <- Image_id[NB_p_top10]
 RMS_top10_id <- Image_id[RMS_p_top10]
 
+EWS_top10_id
+BL_top10_id
+NB_top10_id
+RMS_top10_id
+
 # ⭐ 加分題 C
 # 沿用主題目在 training set 上選出的 30 個基因與訓練好的 SVM 模型,套用到 MLL_test.txt 上做預測,
 # 並做出 test set 的 confusion matrix(同樣是三類別的 3×3 表)。
@@ -227,7 +240,7 @@ RMS_top10_id <- Image_id[RMS_p_top10]
 selected_genes <- c(rownames(ALL_top_10_genes),
                     rownames(MLL_top_10_genes),
                     rownames(AML_top_10_genes))
-#-------------------------------------------------------------------------------
+
 # 讀檔
 MLL_test <- read.delim("MLL_test.txt")
 test_data <- MLL_test[-c(1:49), ]
@@ -246,7 +259,8 @@ table(test_data_labels) # 觀查
 
 # 將 test_data 喂進去 svm model 跑結果
 
-# data_norm、selected_genes、labels 在加分題Ａ已執行
+## 主題目在 training set 上選出的 30 個基因與訓練好的 SVM 模型
+## data_norm、selected_genes、labels 在加分題Ａ已執行
 train_data <- data_norm[selected_genes, ]
 x_train <- t(train_data)
 y_train <- factor(labels)

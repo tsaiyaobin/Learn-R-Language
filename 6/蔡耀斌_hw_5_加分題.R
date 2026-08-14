@@ -117,7 +117,7 @@ table(labels)
 # 前提:
 #   expr  = 表現矩陣 (rows = genes, cols = samples)
 #   group = factor,levels 為 "ALL", "MLL", "AML",長度 = 樣本數
-group <- factor(group, levels = c("ALL", "MLL", "AML"))
+group <- factor(labels, levels = c("ALL", "MLL", "AML"))
 
 # 1. design matrix(不含 intercept,直接用組平均)
 design <- model.matrix(~ 0 + group)
