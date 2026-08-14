@@ -41,3 +41,9 @@ n_top30_cols <- ceiling(nrow(bb) * 0.3)
 top30_genes_sd <- order(sd_gene_cross_samples, decreasing = TRUE)[1:n_top30_cols]
 top30_genes_sd
 
+
+
+
+
+
+
